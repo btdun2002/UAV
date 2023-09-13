@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 # Set the number of UAVs, radius, and must-pass UAVs
 n_uav = 120
 radius = 15
-must_pass_uav = [15, 30, 45, 60, 75, 90]
+must_pass_uav = [60, 70, 80, 90, 100, 110]
 max_distance = 3 * radius
 box_size = 100
 infinity = 3 * box_size**2
@@ -79,47 +79,49 @@ def calculate_weight(path):
     return weight
 
 
-def find_path(input_set, init_index_):
-    G_path_ = [init_index_]
-    temp_node = (0, 0)
-    path_set = set(())
-
-    while (True):
-        min_couple = infinity
-        for i in range(len(G_graph[init_index_])):
-            if G_graph[init_index_][i][0] in input_set:
-                G_path_.append(G_graph[init_index_][i][0])
-                input_set.remove(G_graph[init_index_][i][0])
-                return G_path_, input_set
-
-            if G_graph[init_index_][i][1] < min_couple and (
-                    init_index_, G_graph[init_index_][i][0]) not in path_set:
-                temp_node = G_graph[init_index_][i]
-                min_couple = G_graph[init_index_][i][1]
-        path_set.add((init_index_, temp_node[0]))
-        if (temp_node[0] in G_path_):
-            G_path_ = G_path_[:G_path_.index(temp_node[0])]
-        G_path_.append(temp_node[0])
-        init_index_ = temp_node[0]
-
-
 def greedy():
-    start = time.perf_counter()
     must_pass_uav_set = copy.deepcopy(must_pass_uav)
     G_path = [0]
-    init_index = 0
-    while must_pass_uav_set != []:
+    while True:
         init_index = G_path[-1]
+        if len(G_path) > 1:
+            prev_index = G_path[-2]
+        else:
+            prev_index = G_path[-1]
         G_path.remove(G_path[-1])
-        temp_path, must_pass_uav_set = find_path(must_pass_uav_set, init_index)
-        G_path = G_path + temp_path
-    must_pass_uav_set = [n_uav - 1]
-    temp_path, must_pass_uav_set = find_path(must_pass_uav_set, init_index)
-    G_path = G_path + temp_path
-    # TODO: calculate G_path weight
-    # print("greedy weight: " + str(calculate_weight(G_path)))
-    # return time.perf_counter() - start
-    return G_path
+        temp_path = [init_index]
+        temp_node = 0
+        considered_path_set = set(())
+        considered_mp_uav = False
+        while (considered_mp_uav == False):
+            min_weight = infinity
+            for edge in G_graph[init_index]:
+                neighbor_index, neighbor_weight = edge
+                if must_pass_uav_set != [] and neighbor_index in must_pass_uav_set:
+                    temp_path.append(neighbor_index)
+                    G_path += temp_path
+                    must_pass_uav_set.remove(neighbor_index)
+                    considered_mp_uav = True
+                    break
+
+                if must_pass_uav_set == [] and neighbor_index == n_uav - 1:
+                    temp_path.append(neighbor_index)
+                    G_path += temp_path
+                    return G_path
+
+                if neighbor_weight < min_weight and (
+                        init_index, neighbor_index
+                ) not in considered_path_set and neighbor_index != prev_index:
+                    temp_node = neighbor_index
+                    min_weight = neighbor_weight
+            if min_weight == infinity:
+                temp_node = prev_index
+            if considered_mp_uav == False:
+                considered_path_set.add((init_index, temp_node))
+                if (temp_node in temp_path):
+                    temp_path = temp_path[:temp_path.index(temp_node)]
+                temp_path.append(temp_node)
+            init_index = temp_node
 
 
 def shortest():

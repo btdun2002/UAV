@@ -11,7 +11,7 @@ import csv
 # Set the number of UAVs, radius, and must-pass UAVs
 n_uav = 120
 radius = 15
-must_pass_uav = [15, 30, 45, 60, 75, 90]
+must_pass_uav = [15, 30, 45, 60, 75, 90, 105]
 max_distance = 3 * radius
 box_size = 100
 infinity = (box_size**2 + box_size**2 + box_size**2)**(1 / 2) + 1

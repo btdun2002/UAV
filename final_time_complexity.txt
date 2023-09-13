@@ -1,0 +1,54 @@
+Thuật toán này là từ 1 điểm đến 1 must-pass bất kỳ.
+Trường hợp tệ nhất là thuật toán cứ đi tìm nhưng cứ lặp vào loop vô hạn.
+Mỗi bước là 1 for => số lần chạy for là chỉnh hợp chập 2
+
+nearest_path
+    while
+        dieu kien
+            path_set: O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+        for: O(n_uav - 1)
+            if2
+                dieu kien
+                    path_set: O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+        if
+            dieukien
+                G_path: O(n_uav - n_must_pass)
+
+Conclusion
+    while
+        dieu kien
+            path_set: O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+        for O((n_uav - 1) * (n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+
+Conclusion
+    while O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)! * (n_uav - 1) * (n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+
+greedy
+    while as for: n_must_pass
+        nearest_path O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)! * (n_uav - 1) * (n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+    nearest_path O((n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)! * (n_uav - 1) * (n_uav - n_must_pass)! / (n_uav - n_must_pass - 2)!)
+
+Conclusion
+    while O((n_must_pass + 1) * (V - n_must_pass)! / (V - n_must_pass - 2)! * (V - 1) * (V - n_must_pass)! / (V - n_must_pass - 2)!)
+
+dijkstra O((E+V)*logV)
+
+shortest_path O((E+V)*logV*V)
+
+shortest
+    for: n_uav
+        O((E+V)*logV)
+        
+    try: (n_must_pass + 2)!
+        n_must_pass + 2
+    
+    for: n_must_pass + 2
+        shortest_path O((E+V)*logV*V)
+
+Conclusion
+    for O((E+V)*logV*V)
+    try (n_must_pass + 2)! * (n_must_pass + 2)
+    for O((E+V)*logV*V*(n_must_pass + 2))
+
+Conclusion
+    shortest O((E+V)*logV*V*(n_must_pass + 3)+(n_must_pass + 2)! * (n_must_pass + 2))
