@@ -2,7 +2,6 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
-import networkx as nx
 import time
 import copy
 from itertools import permutations
@@ -41,10 +40,8 @@ distances = cdist(uav_coords, uav_coords)
 distances[distances > 1.9 * radius] = 0
 
 G_graph = []
-edges = []
 for i in range(n_uav):
     G_node = []
-    rev_G_node = []
     for j in range(n_uav):
         if distances[i, j] > 0:
             B_I = 1e9
@@ -61,13 +58,7 @@ for i in range(n_uav):
                                         (n_p * P_T_I * G_T_I * G_R_I * L_I) /
                                         (2 * h * f_l * B_N_I)))
             G_node.append((j, weight))
-            edges.append((i, j, {"weight": weight}))
     G_graph.append(G_node)
-
-G = nx.Graph()
-for i in range(n_uav):
-    G.add_node(i)
-G.add_edges_from(edges)
 
 
 def calculate_weight(path):
@@ -124,35 +115,71 @@ def greedy():
             init_index = temp_node
 
 
-def shortest():
-    start = time.perf_counter()
-    length = dict(nx.all_pairs_dijkstra_path_length(G))
+import heapq
 
-    G_p_nodes = [0] + must_pass_uav + [n_uav - 1]
+
+def dijkstra(graph, start):
+    distances = [infinity] * len(graph)
+    distances[start] = 0
+    previous_nodes = [-1] * len(graph)
+
+    pq = [(0, start)]
+
+    while pq:
+        dist, node = heapq.heappop(pq)
+
+        if dist > distances[node]:
+            continue
+
+        for neighbor, weight in graph[node]:
+            distance = distances[node] + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous_nodes[neighbor] = node
+                heapq.heappush(pq, (distance, neighbor))
+
+    return distances, previous_nodes
+
+
+def D_final_sequence(previous_nodes, start, b):
+    path = []
+    current_node = b
+
+    while current_node != start:
+        path.insert(0, current_node)
+        current_node = previous_nodes[current_node]
+
+    path.insert(0, start)
+
+    return path
+
+
+def shortest():
+    D_lengths = {}
+    D_sequences = {}
+    for node in [0] + must_pass_uav + [n_uav - 1]:
+        distances, previous_nodes = dijkstra(G_graph, node)
+        D_lengths[node] = distances
+        D_sequences[node] = previous_nodes
 
     min_path = ()
-    min_distance = infinity
+    min_cost = infinity
     try:
-        # Find the shortest path among all permutations of the must-pass UAVs
-        for path in permutations(G_p_nodes):
-            if (path[0] == 0 and path[len(G_p_nodes) - 1] == n_uav - 1):
-                # Calculate the total distance of the path
-                distance = sum(length[path[i]][path[i + 1]]
-                               for i in range(len(path) - 1))
-                if distance < min_distance:
-                    min_distance = distance
-                    min_path = path
+        for permutation in permutations(must_pass_uav):
+            permutation = [0] + list(permutation) + [n_uav - 1]
+            cost = sum(D_lengths[permutation[i]][permutation[i + 1]]
+                       for i in range(len(permutation) - 1))
+            if cost < min_cost:
+                min_cost = cost
+                min_path = permutation
     except:
         print("Failed to connect must-pass UAVs")
         sys.exit()
-
-    # Create the final path by connecting the shortest paths between nodes in the min_path
     final = [0]
     for i in range(len(min_path) - 1):
-        final.extend(nx.shortest_path(G, min_path[i], min_path[i + 1])[1:])
-    # TODO: calculate G_path weight
-    # print("shortest weight: " + str(calculate_weight(final)))
-    # return time.perf_counter() - start
+        final.extend(
+            D_final_sequence(D_sequences[min_path[i]], min_path[i],
+                             min_path[i + 1])[1:])
     return final
 
 

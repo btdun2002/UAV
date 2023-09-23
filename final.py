@@ -153,43 +153,46 @@ def dijkstra(graph, start):
     return distances, previous_nodes
 
 
-def shortest_path(graph, start, end):
-    _, previous_nodes = dijkstra(graph, start)
+def D_final_sequence(previous_nodes, start, b):
     path = []
-    current_node = end
-    while current_node != -1:
+    current_node = b
+
+    while current_node != start:
         path.insert(0, current_node)
         current_node = previous_nodes[current_node]
+
+    path.insert(0, start)
+
     return path
 
 
 def shortest():
     start = time.perf_counter()
-    length = {}
-    for node in range(len(G_graph)):
-        distances, _ = dijkstra(G_graph, node)
-        length[node] = distances
-
-    G_p_nodes = [0] + must_pass_uav + [n_uav - 1]
+    D_lengths = {}
+    D_sequences = {}
+    for node in [0] + must_pass_uav + [n_uav - 1]:
+        distances, previous_nodes = dijkstra(G_graph, node)
+        D_lengths[node] = distances
+        D_sequences[node] = previous_nodes
 
     min_path = ()
-    min_distance = infinity
+    min_cost = infinity
     try:
-        # Find the shortest path among all permutations of the must-pass UAVs
-        for path in permutations(G_p_nodes):
-            if path[0] == 0 and path[len(G_p_nodes) - 1] == n_uav - 1:
-                # Calculate the total distance of the path
-                distance = sum(length[path[i]][path[i + 1]]
-                               for i in range(len(path) - 1))
-                if distance < min_distance:
-                    min_distance = distance
-                    min_path = path
+        for permutation in permutations(must_pass_uav):
+            permutation = [0] + list(permutation) + [n_uav - 1]
+            cost = sum(D_lengths[permutation[i]][permutation[i + 1]]
+                       for i in range(len(permutation) - 1))
+            if cost < min_cost:
+                min_cost = cost
+                min_path = permutation
     except:
         print("Failed to connect must-pass UAVs")
         sys.exit()
     final = [0]
     for i in range(len(min_path) - 1):
-        final.extend(shortest_path(G_graph, min_path[i], min_path[i + 1])[1:])
+        final.extend(
+            D_final_sequence(D_sequences[min_path[i]], min_path[i],
+                             min_path[i + 1])[1:])
     elapsed_time = time.perf_counter() - start
     weight = calculate_path_weight(G_graph, final)
     print("shortest" + "    " + str(weight) + "    " + str(elapsed_time))
